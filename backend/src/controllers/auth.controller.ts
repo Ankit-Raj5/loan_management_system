@@ -10,18 +10,18 @@ import {
   validateRegister,
 } from "../utils/validators";
 
-// Handles new borrower signup: validates input and creates the account
+// Handles borrower signup (staff accounts are created by an administrator): validates input and creates the account
 export const register = async (req: Request, res: Response) => {
   assertValid(validateRegister(req.body ?? {}));
-  const { name, email, password } = req.body;
-  const result = await authService.register({ name: name.trim(), email: email.trim(), password });
+  const { name, email, password, role } = req.body;
+  const result = await authService.register({ name: name.trim(), email: email.trim(), password, role });
   return sendCreated(res, result, MESSAGES.AUTH.REGISTERED);
 };
 
 // Handles login for every role: validates input and returns user and token
 export const login = async (req: Request, res: Response) => {
   assertValid(validateLogin(req.body ?? {}));
-  const result = await authService.login(req.body.email.trim(), req.body.password);
+  const result = await authService.login(req.body.email.trim(), req.body.password, req.body.role);
   return sendSuccess(res, result, MESSAGES.AUTH.LOGGED_IN);
 };
 

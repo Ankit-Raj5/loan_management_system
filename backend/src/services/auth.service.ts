@@ -55,27 +55,28 @@ export const verifyToken = (token: string): TokenPayload =>
 // Hashes a plain-text password with bcrypt
 export const hashPassword = (plain: string): Promise<string> => bcrypt.hash(plain, SALT_ROUNDS);
 
-// Creates a new BORROWER account and returns the user with a token
+// Creates a new account (BORROWER by default, never ADMIN) and returns the user with a token
 export const register = async (
-  input: Pick<IUser, "name" | "email" | "password">
+  input: Pick<IUser, "name" | "email" | "password"> & { role?: Role }
 ): Promise<AuthResult> => {
   const exists = await User.exists({ email: input.email.toLowerCase() });
   if (exists) throw new ConflictError(MESSAGES.AUTH.EMAIL_EXISTS);
 
   const password = await hashPassword(input.password);
-  const user = await User.create({ ...input, password, role: Role.BORROWER });
+  const user = await User.create({ ...input, password, role: input.role ?? Role.BORROWER });
 
   return { user: toPublicUser(user), token: signToken(user) };
 };
 
-// Checks credentials, updates lastLoginAt and returns the user with a token
-export const login = async (email: string, password: string): Promise<AuthResult> => {
+// Checks credentials (and the selected role, if given), updates lastLoginAt and returns the user with a token
+export const login = async (email: string, password: string, role?: Role): Promise<AuthResult> => {
   const user = await User.findOne({ email: email.toLowerCase() }).select("+password");
   if (!user) throw new UnauthorizedError(MESSAGES.AUTH.INVALID_CREDENTIALS);
 
   const matches = await bcrypt.compare(password, user.password);
   if (!matches) throw new UnauthorizedError(MESSAGES.AUTH.INVALID_CREDENTIALS);
   if (!user.isActive) throw new UnauthorizedError(MESSAGES.AUTH.ACCOUNT_DISABLED);
+  if (role && user.role !== role) throw new NotFoundError(MESSAGES.AUTH.ROLE_ACCOUNT_NOT_FOUND);
 
   user.lastLoginAt = new Date();
   await user.save();

@@ -3,7 +3,9 @@ import { LOAN_CONFIG, UTR_REGEX } from "../config/loan.config";
 import { todayBusinessDate } from "./dates";
 import { hasMaxTwoDecimals } from "./money";
 import { ALL_EMPLOYMENT_MODES, EmploymentMode } from "../types/loan";
+import { ALL_ROLES, Role, SELF_REGISTER_ROLES } from "../types/roles";
 import { ValidationError } from "./errors";
+import { MESSAGES } from "./messages";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -25,14 +27,18 @@ export const validateRegister = (body: Record<string, unknown>): FieldErrors => 
   if (!isString(body.email) || !EMAIL_REGEX.test(body.email)) errors.email = "A valid email is required";
   if (!isString(body.password) || body.password.length < 8)
     errors.password = "Password must be at least 8 characters";
+  if (body.role !== undefined && !SELF_REGISTER_ROLES.includes(body.role as Role))
+    errors.role = MESSAGES.AUTH.STAFF_SIGNUP_BLOCKED;
   return errors;
 };
 
-// Validates the login request body (email, password)
+// Validates the login request body (email, password and optional role selected on the login screen)
 export const validateLogin = (body: Record<string, unknown>): FieldErrors => {
   const errors: FieldErrors = {};
   if (!isString(body.email) || !EMAIL_REGEX.test(body.email)) errors.email = "A valid email is required";
   if (!isString(body.password) || body.password.length === 0) errors.password = "Password is required";
+  if (body.role !== undefined && !ALL_ROLES.includes(body.role as Role))
+    errors.role = `Role must be one of: ${ALL_ROLES.join(", ")}`;
   return errors;
 };
 

@@ -8,3 +8,5 @@ export enum Role {
 }
 
 export const ALL_ROLES = Object.values(Role);
+
+export const SELF_REGISTER_ROLES: Role[] = [Role.BORROWER];

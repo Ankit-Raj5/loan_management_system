@@ -7,6 +7,8 @@ export const MESSAGES = {
     INVALID_CREDENTIALS: "Invalid email or password",
     INCORRECT_CURRENT_PASSWORD: "Current password is incorrect",
     PASSWORD_UNCHANGED: "New password must be different from the current password",
+    STAFF_SIGNUP_BLOCKED: "Only borrower accounts can be created through signup. Staff accounts are created by an administrator",
+    ROLE_ACCOUNT_NOT_FOUND: "No account found for the selected role",
     EMAIL_EXISTS: "An account with this email already exists",
     TOKEN_MISSING: "Authentication token is missing",
     TOKEN_INVALID: "Authentication token is invalid or expired",
