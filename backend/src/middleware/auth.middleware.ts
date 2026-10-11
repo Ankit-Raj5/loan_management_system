@@ -4,7 +4,7 @@ import { verifyToken } from "../services/auth.service";
 import { UnauthorizedError } from "../utils/errors";
 import { MESSAGES } from "../utils/messages";
 
-/** Verifies the Bearer token, re-checks the user in DB and attaches { id, role } to req.user. */
+// Protects routes by verifying the Bearer token and attaching the user's id and role to req.user
 export const authenticate = async (req: Request, _res: Response, next: NextFunction) => {
   try {
     const header = req.headers.authorization;
@@ -17,7 +17,6 @@ export const authenticate = async (req: Request, _res: Response, next: NextFunct
       throw new UnauthorizedError(MESSAGES.AUTH.TOKEN_INVALID);
     }
 
-    // Read role from DB, not the token, so role changes / disabling apply immediately
     const user = await User.findById(payload.id).select("role isActive");
     if (!user) throw new UnauthorizedError(MESSAGES.AUTH.USER_NOT_FOUND);
     if (!user.isActive) throw new UnauthorizedError(MESSAGES.AUTH.ACCOUNT_DISABLED);

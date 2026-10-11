@@ -15,6 +15,7 @@ const SEED_USERS = [
 
 const PASSWORD = "Password@123";
 
+// Creates or resets one account per role with a known password
 const seed = async () => {
   await connectDB();
   const password = await hashPassword(PASSWORD);

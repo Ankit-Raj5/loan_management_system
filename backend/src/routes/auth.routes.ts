@@ -5,8 +5,16 @@ import { asyncHandler } from "../utils/asyncHandler";
 
 const router = Router();
 
+// Public: create a new borrower account
 router.post("/register", asyncHandler(authController.register));
+
+// Public: log in with email and password (all roles)
 router.post("/login", asyncHandler(authController.login));
+
+// Authenticated: get the logged-in user's profile
 router.get("/me", authenticate, asyncHandler(authController.me));
+
+// Authenticated: change the logged-in user's password
+router.patch("/change-password", authenticate, asyncHandler(authController.changePassword));
 
 export default router;

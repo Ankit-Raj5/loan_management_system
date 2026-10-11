@@ -4,10 +4,11 @@ import { AppError, NotFoundError } from "../utils/errors";
 import { MESSAGES } from "../utils/messages";
 import { ErrorBody } from "../utils/response";
 
+// Forwards requests that matched no route as a 404 error
 export const notFoundHandler = (_req: Request, _res: Response, next: NextFunction) =>
   next(new NotFoundError(MESSAGES.COMMON.ROUTE_NOT_FOUND));
 
-/** Single place where every error becomes the standard ErrorBody. */
+// Converts every thrown error into the standard error response
 export const errorHandler = (err: unknown, _req: Request, res: Response, _next: NextFunction) => {
   let appError: AppError;
 

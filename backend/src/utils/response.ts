@@ -1,11 +1,5 @@
 import { Response } from "express";
 
-/**
- * Standard response envelope for every API.
- *
- * Success: { success: true,  message, data }
- * Error:   { success: false, message, error: { code, details? } }  (see error.middleware)
- */
 export interface SuccessBody<T> {
   success: true;
   message: string;
@@ -18,6 +12,7 @@ export interface ErrorBody {
   error: { code: string; details?: unknown };
 }
 
+// Sends the standard success response envelope with the given status code
 export const sendSuccess = <T>(
   res: Response,
   data: T,
@@ -26,5 +21,6 @@ export const sendSuccess = <T>(
 ): Response<SuccessBody<T>> =>
   res.status(statusCode).json({ success: true, message, data });
 
+// Sends the standard success response envelope with status 201
 export const sendCreated = <T>(res: Response, data: T, message = "Created successfully") =>
   sendSuccess(res, data, message, 201);

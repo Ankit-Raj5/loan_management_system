@@ -1,6 +1,6 @@
 import { NextFunction, Request, RequestHandler, Response } from "express";
 
-/** Forwards rejected promises from async controllers to the error middleware. */
+// Wraps an async controller so rejected promises reach the error middleware
 export const asyncHandler =
   (fn: (req: Request, res: Response, next: NextFunction) => Promise<unknown>): RequestHandler =>
   (req, res, next) => {

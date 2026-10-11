@@ -5,6 +5,7 @@ import morgan from "morgan";
 import { env } from "./config/env";
 import { errorHandler, notFoundHandler } from "./middleware/error.middleware";
 import routes from "./routes";
+import { mountRouter } from "./utils/routeRegistry";
 
 const app = express();
 
@@ -13,7 +14,7 @@ app.use(cors({ origin: env.clientUrl, credentials: true }));
 app.use(express.json());
 if (env.nodeEnv !== "test") app.use(morgan("dev"));
 
-app.use("/api", routes);
+mountRouter(app, "/api", routes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
