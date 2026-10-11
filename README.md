@@ -243,6 +243,7 @@ npm install
 |---|---|
 | `npm run dev` | Development server with auto-restart |
 | `npm run seed` | Creates or resets the six test accounts |
+| `npm run seed:prod` | Same, but from the compiled build (`dist/seed/seed.js`); use after `npm run build`, for example on a host |
 | `npm run build` | Compiles TypeScript to `dist/` |
 | `npm start` | Runs the compiled build (`dist/server.js`) |
 
@@ -297,6 +298,32 @@ cd frontend && npm run dev
 ```
 
 Then open http://localhost:3000.
+
+### Deploying
+
+The backend and frontend deploy separately. Example using **Render** for the backend (any Node host works the same way):
+
+| Setting | Value |
+|---|---|
+| Root directory | `backend` |
+| Build command | `npm install && npm run build` |
+| Start command | `npm start` |
+
+Environment variables to set on the host (the host provides `PORT` itself):
+
+| Variable | Value |
+|---|---|
+| `NODE_ENV` | `production` |
+| `MONGO_URI` | A **MongoDB Atlas** connection string (a host cannot reach your local MongoDB). In Atlas, allow the host's IP under *Network Access*. |
+| `JWT_SECRET` | A long random string |
+| `JWT_EXPIRES_IN` | `1d` |
+| `CLIENT_URL` | The deployed frontend URL |
+| `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | From your Cloudinary dashboard |
+
+- **Why `typescript` and `@types/*` are in `dependencies`:** hosts install with `NODE_ENV=production`, which skips `devDependencies`. The build needs the compiler and type packages, so they live in `dependencies` and `npm install && npm run build` works as-is.
+- **Seeding the deployed database:** the seed script is not run automatically. Run it once against your Atlas database, either from your machine (set `MONGO_URI` to the Atlas string in `backend/.env`, then `npm run seed`) or on the host with `npm run seed:prod`.
+- **Frontend:** deploy `frontend` to any Next.js host (for example Vercel) and set `API_URL` to your deployed backend, including `/api` (for example `https://your-backend.onrender.com/api`).
+- Free hosting tiers may put the backend to sleep, so the first request after a pause can take a while.
 
 ---
 
