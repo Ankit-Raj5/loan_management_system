@@ -1,6 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE } from "@/lib/config";
 import { API_URL } from "@/lib/server/env";
+import { unreachableResponse } from "@/lib/server/upstream";
+
+// Allow up to 60s so a sleeping free-tier backend has time to wake up
+export const maxDuration = 60;
 
 // Forwards any /api/* call to the backend, adding the Bearer token from the httpOnly cookie
 const forward = async (request: NextRequest, { params }: RouteContext<"/api/[...path]">) => {
@@ -24,11 +28,9 @@ const forward = async (request: NextRequest, { params }: RouteContext<"/api/[...
       status: backendRes.status,
       headers: { "content-type": backendRes.headers.get("content-type") ?? "application/json" },
     });
-  } catch {
-    return NextResponse.json(
-      { success: false, message: "Could not reach the server", error: { code: "UPSTREAM_ERROR" } },
-      { status: 502 }
-    );
+  } catch (error) {
+    console.error(`Proxy failed: could not reach ${API_URL}/${path.join("/")}`, error);
+    return unreachableResponse();
   }
 };
 
