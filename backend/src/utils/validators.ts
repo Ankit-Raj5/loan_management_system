@@ -1,5 +1,7 @@
 import { Types } from "mongoose";
-import { LOAN_CONFIG } from "../config/loan.config";
+import { LOAN_CONFIG, UTR_REGEX } from "../config/loan.config";
+import { todayBusinessDate } from "./dates";
+import { hasMaxTwoDecimals } from "./money";
 import { ALL_EMPLOYMENT_MODES, EmploymentMode } from "../types/loan";
 import { ValidationError } from "./errors";
 
@@ -89,6 +91,74 @@ export const validateLoanConfig = (body: Record<string, unknown>): FieldErrors =
     tenureDays > LOAN_CONFIG.MAX_TENURE_DAYS
   )
     errors.tenureDays = `Tenure must be a whole number of days between ${LOAN_CONFIG.MIN_TENURE_DAYS} and ${LOAN_CONFIG.MAX_TENURE_DAYS}`;
+
+  return errors;
+};
+
+export interface ListQuery<T extends string> {
+  page: number;
+  limit: number;
+  filter?: T;
+}
+
+// Validates ?page, ?limit and an optional filter value (status or stage) for list endpoints
+export const parseListQuery = <T extends string>(
+  query: Record<string, unknown>,
+  filterKey: string,
+  allowed: readonly T[]
+): ListQuery<T> => {
+  const errors: FieldErrors = {};
+  const page = query.page === undefined ? 1 : Number(query.page);
+  const limit = query.limit === undefined ? 20 : Number(query.limit);
+
+  if (!Number.isInteger(page) || page < 1) errors.page = "Page must be a whole number of 1 or more";
+  if (!Number.isInteger(limit) || limit < 1 || limit > 100) errors.limit = "Limit must be a whole number between 1 and 100";
+
+  const raw = query[filterKey];
+  let filter: T | undefined;
+  if (raw !== undefined) {
+    if (isString(raw) && (allowed as readonly string[]).includes(raw)) filter = raw as T;
+    else errors[filterKey] = `${filterKey} must be one of: ${allowed.join(", ")}`;
+  }
+
+  assertValid(errors);
+  return { page, limit, filter };
+};
+
+// Validates an optional free-text note (max 500 characters)
+export const validateOptionalNote = (body: Record<string, unknown>): FieldErrors => {
+  const errors: FieldErrors = {};
+  if (body.note !== undefined && (!isString(body.note) || body.note.trim().length > 500))
+    errors.note = "Note must be text of at most 500 characters";
+  return errors;
+};
+
+// Validates the sanction rejection body: a reason of 5 to 500 characters is mandatory
+export const validateRejectBody = (body: Record<string, unknown>): FieldErrors => {
+  const errors: FieldErrors = {};
+  if (!isString(body.reason) || body.reason.trim().length < 5 || body.reason.trim().length > 500)
+    errors.reason = "Rejection reason is required (5 to 500 characters)";
+  return errors;
+};
+
+// Validates a payment body: UTR, amount (max 2 decimals) and a real date that is not in the future
+export const validatePaymentBody = (body: Record<string, unknown>): FieldErrors => {
+  const errors: FieldErrors = {};
+
+  if (!isString(body.utr) || !UTR_REGEX.test(body.utr.trim().toUpperCase()))
+    errors.utr = "UTR must be 6 to 30 letters or digits";
+
+  if (
+    typeof body.amount !== "number" ||
+    !Number.isFinite(body.amount) ||
+    body.amount <= 0 ||
+    !hasMaxTwoDecimals(body.amount)
+  )
+    errors.amount = "Amount must be a number greater than 0 with at most 2 decimal places";
+
+  const date = parseDateOnly(body.date);
+  if (!date) errors.date = "Payment date is required in YYYY-MM-DD format";
+  else if ((body.date as string) > todayBusinessDate()) errors.date = "Payment date cannot be in the future";
 
   return errors;
 };

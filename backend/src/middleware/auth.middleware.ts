@@ -17,11 +17,11 @@ export const authenticate = async (req: Request, _res: Response, next: NextFunct
       throw new UnauthorizedError(MESSAGES.AUTH.TOKEN_INVALID);
     }
 
-    const user = await User.findById(payload.id).select("role isActive");
+    const user = await User.findById(payload.id).select("name role isActive");
     if (!user) throw new UnauthorizedError(MESSAGES.AUTH.USER_NOT_FOUND);
     if (!user.isActive) throw new UnauthorizedError(MESSAGES.AUTH.ACCOUNT_DISABLED);
 
-    req.user = { id: user.id, role: user.role };
+    req.user = { id: user.id, name: user.name, role: user.role };
     next();
   } catch (err) {
     next(err);

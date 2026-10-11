@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import * as applicationService from "../services/application.service";
+import { getActor } from "../utils/actor";
 import { BadRequestError, UnauthorizedError } from "../utils/errors";
 import { MESSAGES } from "../utils/messages";
 import { sendCreated, sendSuccess } from "../utils/response";
@@ -26,11 +27,11 @@ const getApplicationId = (req: Request): string => {
 
 // Step 2: validates personal details, runs the BRE and saves the draft application
 export const submitPersonalDetails = async (req: Request, res: Response) => {
-  const userId = getUserId(req);
+  const actor = getActor(req);
   const body = req.body ?? {};
   assertValid(validatePersonalDetails(body));
 
-  const application = await applicationService.submitPersonalDetails(userId, {
+  const application = await applicationService.submitPersonalDetails(actor, {
     fullName: body.fullName.trim(),
     pan: body.pan.trim().toUpperCase(),
     dob: parseDateOnly(body.dob) as Date,
@@ -56,12 +57,12 @@ export const calculateLoan = async (req: Request, res: Response) => {
 
 // Step 4: submits the loan application with the chosen amount and tenure
 export const applyForLoan = async (req: Request, res: Response) => {
-  const userId = getUserId(req);
+  const actor = getActor(req);
   const applicationId = getApplicationId(req);
   const body = req.body ?? {};
   assertValid(validateLoanConfig(body));
 
-  const application = await applicationService.applyForLoan(userId, applicationId, body.amount, body.tenureDays);
+  const application = await applicationService.applyForLoan(actor, applicationId, body.amount, body.tenureDays);
   return sendSuccess(res, { application }, MESSAGES.APPLICATION.APPLIED);
 };
 

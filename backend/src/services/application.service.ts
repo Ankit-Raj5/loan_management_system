@@ -16,8 +16,10 @@ import {
 import { BusinessRuleError, ConflictError, NotFoundError, ValidationError } from "../utils/errors";
 import { calculateLoan, LoanBreakdown } from "../utils/loanCalculator";
 import { MESSAGES } from "../utils/messages";
+import { AuditActor, SYSTEM_ACTOR } from "../types/audit";
 import { evaluate } from "./bre.service";
 import { deleteSalarySlipFile, uploadSalarySlipFile } from "./storage.service";
+import { buildHistoryEntry, HistoryView, toHistoryViews } from "./loanWorkflow.service";
 
 export interface PersonalDetailsInput {
   fullName: string;
@@ -44,6 +46,7 @@ export interface ApplicationResponse {
   rejectionReason: string | null;
   rejectionSource: RejectionSource | null;
   breFailures: IBreFailure[];
+  history: HistoryView[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -87,6 +90,7 @@ const toApplicationResponse = (app: LoanApplicationDocument): ApplicationRespons
   rejectionReason: app.rejectionReason ?? null,
   rejectionSource: app.rejectionSource ?? null,
   breFailures: (app.breFailures ?? []).map((f) => ({ rule: f.rule, message: f.message })),
+  history: toHistoryViews(app.statusHistory),
   createdAt: app.createdAt,
   updatedAt: app.updatedAt,
 });
@@ -122,6 +126,10 @@ const rejectByBre = async (app: LoanApplicationDocument, failures: IBreFailure[]
   app.rejectionSource = RejectionSource.BRE;
   app.breFailures = failures;
   app.rejectionReason = `${MESSAGES.APPLICATION.BRE_REJECTION_PREFIX}: ${failures.map((f) => f.message).join("; ")}`;
+  app.rejectedAt = new Date();
+  app.statusHistory.push(
+    buildHistoryEntry(ApplicationStatus.DRAFT, ApplicationStatus.REJECTED, SYSTEM_ACTOR, app.rejectionReason)
+  );
   await app.save();
   throw new BusinessRuleError(MESSAGES.APPLICATION.BRE_REJECTED, { applicationId: app.id, failures });
 };
@@ -132,14 +140,17 @@ export const previewLoan = (amount: number, tenureDays: number): LoanBreakdown =
 
 // Runs the BRE on the borrower's working DRAFT (creating one only if none exists): stays DRAFT if eligible, becomes REJECTED if not
 export const submitPersonalDetails = async (
-  userId: string,
+  actor: AuditActor,
   input: PersonalDetailsInput
 ): Promise<ApplicationResponse> => {
+  const userId = actor.userId as string;
   await assertNoActiveApplication(userId);
 
-  const app =
-    (await LoanApplication.findOne({ borrower: userId, status: ApplicationStatus.DRAFT })) ??
-    new LoanApplication({ borrower: new Types.ObjectId(userId), status: ApplicationStatus.DRAFT });
+  let app = await LoanApplication.findOne({ borrower: userId, status: ApplicationStatus.DRAFT });
+  if (!app) {
+    app = new LoanApplication({ borrower: new Types.ObjectId(userId), status: ApplicationStatus.DRAFT });
+    app.statusHistory.push(buildHistoryEntry(null, ApplicationStatus.DRAFT, actor, "Application started"));
+  }
   app.personalDetails = input;
 
   const failures = evaluate(input);
@@ -195,11 +206,12 @@ export const uploadSalarySlip = async (
 
 // Re-checks eligibility, calculates the loan and submits the application as APPLIED
 export const applyForLoan = async (
-  userId: string,
+  actor: AuditActor,
   applicationId: string,
   amount: number,
   tenureDays: number
 ): Promise<ApplicationResponse> => {
+  const userId = actor.userId as string;
   const app = await findOwnedApplication(userId, applicationId);
   assertDraft(app);
 
@@ -217,6 +229,7 @@ export const applyForLoan = async (
   app.loan = calculateLoan(amount, tenureDays);
   app.status = ApplicationStatus.APPLIED;
   app.appliedAt = new Date();
+  app.statusHistory.push(buildHistoryEntry(ApplicationStatus.DRAFT, ApplicationStatus.APPLIED, actor, "Loan application submitted"));
   await app.save();
 
   return toApplicationResponse(app);

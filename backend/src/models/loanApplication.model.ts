@@ -38,6 +38,16 @@ export interface IBreFailure {
   message: string;
 }
 
+export interface IStatusHistory {
+  from: ApplicationStatus | null;
+  to: ApplicationStatus;
+  by?: Types.ObjectId;
+  byName: string;
+  byRole: string;
+  at: Date;
+  note?: string;
+}
+
 export interface ILoanApplication {
   borrower: Types.ObjectId;
   status: ApplicationStatus;
@@ -47,7 +57,16 @@ export interface ILoanApplication {
   appliedAt?: Date;
   rejectionReason?: string;
   rejectionSource?: RejectionSource;
+  rejectedAt?: Date;
+  rejectedBy?: Types.ObjectId;
   breFailures: IBreFailure[];
+  sanctionedAt?: Date;
+  sanctionedBy?: Types.ObjectId;
+  disbursedAt?: Date;
+  disbursedBy?: Types.ObjectId;
+  closedAt?: Date;
+  amountPaid: number;
+  statusHistory: IStatusHistory[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -97,6 +116,19 @@ const breFailureSchema = new Schema<IBreFailure>(
   { _id: false }
 );
 
+const statusHistorySchema = new Schema<IStatusHistory>(
+  {
+    from: { type: String, enum: ALL_APPLICATION_STATUSES, default: null },
+    to: { type: String, enum: ALL_APPLICATION_STATUSES, required: true },
+    by: { type: Schema.Types.ObjectId, ref: "User" },
+    byName: { type: String, required: true },
+    byRole: { type: String, required: true },
+    at: { type: Date, required: true },
+    note: { type: String, trim: true },
+  },
+  { _id: false }
+);
+
 const loanApplicationSchema = new Schema<ILoanApplication>(
   {
     borrower: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
@@ -112,7 +144,16 @@ const loanApplicationSchema = new Schema<ILoanApplication>(
     appliedAt: { type: Date },
     rejectionReason: { type: String, trim: true },
     rejectionSource: { type: String, enum: Object.values(RejectionSource) },
+    rejectedAt: { type: Date },
+    rejectedBy: { type: Schema.Types.ObjectId, ref: "User" },
     breFailures: { type: [breFailureSchema], default: [] },
+    sanctionedAt: { type: Date },
+    sanctionedBy: { type: Schema.Types.ObjectId, ref: "User" },
+    disbursedAt: { type: Date },
+    disbursedBy: { type: Schema.Types.ObjectId, ref: "User" },
+    closedAt: { type: Date },
+    amountPaid: { type: Number, default: 0, min: 0 },
+    statusHistory: { type: [statusHistorySchema], default: [] },
   },
   { timestamps: true }
 );

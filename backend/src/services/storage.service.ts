@@ -40,6 +40,30 @@ export const uploadSalarySlipFile = async (buffer: Buffer): Promise<StoredFile> 
   }
 };
 
+const FORMAT_BY_MIME: Record<string, string> = {
+  "application/pdf": "pdf",
+  "image/jpeg": "jpg",
+  "image/png": "png",
+};
+
+// Generates a short-lived signed download link for a private salary slip
+export const getSalarySlipDownloadUrl = (
+  publicId: string,
+  resourceType: string,
+  mimeType: string,
+  ttlSeconds: number
+): { url: string; expiresAt: Date } => {
+  assertConfigured();
+  const expiresAtSeconds = Math.floor(Date.now() / 1000) + ttlSeconds;
+  const url = cloudinary.utils.private_download_url(publicId, FORMAT_BY_MIME[mimeType] ?? "pdf", {
+    resource_type: resourceType,
+    type: "authenticated",
+    expires_at: expiresAtSeconds,
+    attachment: false,
+  });
+  return { url, expiresAt: new Date(expiresAtSeconds * 1000) };
+};
+
 // Deletes a stored salary slip from Cloudinary and ignores failures (best-effort cleanup)
 export const deleteSalarySlipFile = async (publicId: string, resourceType: string): Promise<void> => {
   if (!isCloudinaryConfigured) return;

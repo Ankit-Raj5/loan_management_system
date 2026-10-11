@@ -10,4 +10,8 @@ export const LOAN_CONFIG = {
   DAYS_IN_YEAR: 365,
 } as const;
 
+export const BUSINESS_TIMEZONE = "Asia/Kolkata";
+
+export const UTR_REGEX = /^[A-Z0-9]{6,30}$/;
+
 export const PAN_REGEX = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
