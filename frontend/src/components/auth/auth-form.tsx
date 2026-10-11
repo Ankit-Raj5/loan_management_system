@@ -6,6 +6,7 @@ import { useState, type FormEvent } from "react";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { TextField } from "@/components/ui/field";
+import { PasswordField } from "@/components/ui/password-field";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { canAccessPath, homePathForRole } from "@/lib/access";
 import { getFieldErrors } from "@/lib/api-error";
@@ -90,9 +91,8 @@ export function AuthForm({ mode, next }: AuthFormProps) {
           <TextField id="name" label="Full name" autoComplete="name" value={values.name} onChange={update("name")} error={fieldErrors.name} />
         )}
         <TextField id="email" type="email" label="Email" autoComplete="email" value={values.email} onChange={update("email")} error={fieldErrors.email} />
-        <TextField
+        <PasswordField
           id="password"
-          type="password"
           label="Password"
           autoComplete={mode === "login" ? "current-password" : "new-password"}
           hint={mode === "register" ? "At least 8 characters" : undefined}

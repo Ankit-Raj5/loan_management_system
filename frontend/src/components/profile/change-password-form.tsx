@@ -2,7 +2,7 @@
 
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
-import { TextField } from "@/components/ui/field";
+import { PasswordField } from "@/components/ui/password-field";
 import { getFieldErrors } from "@/lib/api-error";
 import { api } from "@/lib/client/api";
 import { useAsyncAction } from "@/lib/client/use-async-action";
@@ -32,18 +32,16 @@ export function ChangePasswordForm() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4" noValidate>
-      <TextField
+      <PasswordField
         id="currentPassword"
-        type="password"
         label="Current password"
         autoComplete="current-password"
         value={values.currentPassword}
         onChange={update("currentPassword")}
         error={fieldErrors.currentPassword}
       />
-      <TextField
+      <PasswordField
         id="newPassword"
-        type="password"
         label="New password"
         autoComplete="new-password"
         hint="At least 8 characters"
